@@ -47,11 +47,6 @@ export default function Footer() {
                 </button>
               </li>
               <li>
-                <button onClick={() => scrollToSection("pricing")} className="hover-elevate rounded-md px-1 text-muted-foreground" data-testid="footer-link-pricing">
-                  Pricing
-                </button>
-              </li>
-              <li>
                 <button onClick={() => scrollToSection("faq")} className="hover-elevate rounded-md px-1 text-muted-foreground" data-testid="footer-link-faq">
                   FAQ
                 </button>

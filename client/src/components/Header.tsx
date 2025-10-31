@@ -46,13 +46,6 @@ export default function Header() {
             Contact Us
           </button>
           <button
-            onClick={() => scrollToSection("pricing")}
-            className="text-sm font-medium hover-elevate rounded-md px-3 py-2"
-            data-testid="nav-pricing"
-          >
-            Pricing
-          </button>
-          <button
             onClick={() => scrollToSection("faq")}
             className="text-sm font-medium hover-elevate rounded-md px-3 py-2"
             data-testid="nav-faq"
@@ -100,13 +93,6 @@ export default function Header() {
               data-testid="nav-mobile-contact"
             >
               Contact Us
-            </button>
-            <button
-              onClick={() => scrollToSection("pricing")}
-              className="text-left text-sm font-medium hover-elevate rounded-md px-3 py-2"
-              data-testid="nav-mobile-pricing"
-            >
-              Pricing
             </button>
             <button
               onClick={() => scrollToSection("faq")}

@@ -6,7 +6,6 @@ import Benefits from "@/components/Benefits";
 import DemoForm from "@/components/DemoForm";
 import About from "@/components/About";
 import ContactForm from "@/components/ContactForm";
-import Pricing from "@/components/Pricing";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 
@@ -22,7 +21,6 @@ export default function Home() {
         <DemoForm />
         <About />
         <ContactForm />
-        <Pricing />
         <FAQ />
       </main>
       <Footer />
