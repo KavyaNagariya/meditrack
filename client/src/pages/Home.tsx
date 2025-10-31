@@ -3,7 +3,6 @@ import Hero from "@/components/Hero";
 import Features from "@/components/Features";
 import HowItWorks from "@/components/HowItWorks";
 import Benefits from "@/components/Benefits";
-import DemoForm from "@/components/DemoForm";
 import About from "@/components/About";
 import ContactForm from "@/components/ContactForm";
 import FAQ from "@/components/FAQ";
@@ -18,7 +17,6 @@ export default function Home() {
         <Features />
         <HowItWorks />
         <Benefits />
-        <DemoForm />
         <About />
         <ContactForm />
         <FAQ />
