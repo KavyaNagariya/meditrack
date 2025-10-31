@@ -38,7 +38,7 @@ export default function HowItWorks() {
         {steps.map((step, index) => (
           <div key={index} className="relative" data-testid={`step-${index}`}>
             <Card className="p-8">
-              <div className="mb-4 text-6xl font-bold text-primary/10" data-testid={`step-number-${index}`}>
+              <div className="mb-4 text-6xl font-bold text-border" data-testid={`step-number-${index}`}>
                 {step.number}
               </div>
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-lg bg-primary/10">
