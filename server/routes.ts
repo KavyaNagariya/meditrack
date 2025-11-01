@@ -14,8 +14,20 @@ declare module "express-session" {
   }
 }
 
+// Store Google OAuth credentials at module level
+let googleClientId: string | undefined;
+let googleClientSecret: string | undefined;
+
 // Initialize passport
 export function initializeAuth(app: Express) {
+  // Load environment variables
+  googleClientId = process.env.GOOGLE_CLIENT_ID;
+  googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  
+  console.log("Google OAuth Configuration Check:");
+  console.log("  GOOGLE_CLIENT_ID:", googleClientId ? `${googleClientId.substring(0, 20)}...` : "NOT SET");
+  console.log("  GOOGLE_CLIENT_SECRET:", googleClientSecret ? "SET" : "NOT SET");
+  
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "fallback_secret_key_for_development",
@@ -46,34 +58,66 @@ export function initializeAuth(app: Express) {
   });
 
   // Google OAuth strategy
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  if (googleClientId && googleClientSecret) {
+    // Determine the callback URL - prioritize explicit setting, then BASE_URL, then default
+    const port = process.env.PORT || "3000";
+    const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
+    const callbackURL = process.env.GOOGLE_CALLBACK_URL || `${baseUrl}/auth/google/callback`;
+    console.log("  Callback URL:", callbackURL);
+    console.log("  ⚠️  IMPORTANT: This callback URL must match EXACTLY in Google Cloud Console");
+    
     passport.use(
       new GoogleStrategy(
         {
-          clientID: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          callbackURL: "/auth/google/callback",
+          clientID: googleClientId,
+          clientSecret: googleClientSecret,
+          callbackURL: callbackURL,
         },
         async (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => {
           try {
+            console.log("Google OAuth profile received:", {
+              id: profile.id,
+              displayName: profile.displayName,
+              emails: profile.emails?.map(e => e.value),
+            });
+            
+            // Use email as username, fallback to profile ID
+            const username = profile.emails && profile.emails[0]?.value 
+              ? profile.emails[0].value 
+              : profile.id;
+            
+            if (!username) {
+              console.error("Google OAuth: No username available from profile");
+              return done(new Error("Unable to get user information from Google"), undefined);
+            }
+            
+            console.log("Using username for Google OAuth user:", username);
+            
             // Check if user already exists
-            let user = await storage.getUserByUsername(profile.id);
+            let user = await storage.getUserByUsername(username);
             
             if (!user) {
-              // Create new user
+              console.log("Creating new user for Google OAuth:", username);
+              // Create new user with no password for Google OAuth
               user = await storage.createUser({
-                username: profile.id,
-                password: "", // No password for Google auth users
+                username: username,
+                password: null, // No password for Google auth users
               });
+              console.log("New user created:", user.id);
+            } else {
+              console.log("Existing user found:", user.id);
             }
             
             return done(null, user);
           } catch (error) {
+            console.error("Google OAuth error:", error);
             return done(error as Error, undefined);
           }
         }
       )
     );
+  } else {
+    console.warn("Google OAuth not configured - missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET");
   }
 }
 
@@ -99,7 +143,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if user exists and password matches
       // Note: In a real app, you would hash the password
-      if (user && user.password === password) {
+      // OAuth users have null/undefined password
+      if (user && user.password && user.password === password) {
         // Set session
         req.session!.userId = user.id;
         return res.json({ 
@@ -161,15 +206,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Google OAuth routes
   app.get(
     "/auth/google",
-    passport.authenticate("google", { scope: ["profile"] })
+    (req: Request, res: Response, next: NextFunction) => {
+      if (!googleClientId || !googleClientSecret) {
+        console.error("Google OAuth not configured - missing credentials");
+        return res.status(500).json({ 
+          message: "Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your environment variables." 
+        });
+      }
+      console.log("Initiating Google OAuth authentication...");
+      passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+    }
   );
 
   app.get(
     "/auth/google/callback",
-    passport.authenticate("google", { failureRedirect: "/login" }),
-    (req: Request, res: Response) => {
-      // Successful authentication, redirect to home
-      res.redirect("/");
+    (req: Request, res: Response, next: NextFunction) => {
+      passport.authenticate("google", { failureRedirect: "/login?error=google_auth_failed" })(
+        req,
+        res,
+        (err: any) => {
+          if (err) {
+            console.error("Google OAuth authentication error:", err);
+            return res.redirect("/login?error=google_auth_failed");
+          }
+          
+          try {
+            // Set session after successful Google authentication
+            if (req.user && typeof req.user === 'object' && 'id' in req.user) {
+              req.session!.userId = req.user.id as string;
+              console.log("Google OAuth successful, session set for user:", req.user.id);
+            } else {
+              console.error("Google OAuth successful but user object is invalid:", req.user);
+              return res.redirect("/login?error=callback_error");
+            }
+            // Successful authentication, redirect to home
+            res.redirect("/");
+          } catch (error) {
+            console.error("Google OAuth callback error:", error);
+            res.redirect("/login?error=callback_error");
+          }
+        }
+      );
     }
   );
 

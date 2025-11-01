@@ -5,9 +5,22 @@ import postgres from "postgres";
 import { eq } from "drizzle-orm";
 import { users } from "@shared/schema";
 
-// Initialize database connection
-const client = postgres(process.env.DATABASE_URL || "");
-export const db = drizzle(client);
+// Initialize database connection with error handling
+let db: ReturnType<typeof drizzle> | null = null;
+let client: ReturnType<typeof postgres> | null = null;
+
+try {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl) {
+    client = postgres(databaseUrl);
+    db = drizzle(client);
+    console.log("Database connection initialized successfully");
+  } else {
+    console.warn("DATABASE_URL not set, database operations will not be available");
+  }
+} catch (error) {
+  console.error("Failed to initialize database connection:", error);
+}
 
 // modify the interface with any CRUD methods
 // you might need
@@ -20,18 +33,53 @@ export interface IStorage {
 
 export class DbStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id));
-    return result[0];
+    if (!db) {
+      console.warn("Database not available, returning undefined for getUser");
+      return undefined;
+    }
+    
+    try {
+      const result = await db.select().from(users).where(eq(users.id, id));
+      return result[0];
+    } catch (error) {
+      console.error("Error in getUser:", error);
+      return undefined;
+    }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username));
-    return result[0];
+    if (!db) {
+      console.warn("Database not available, returning undefined for getUserByUsername");
+      return undefined;
+    }
+    
+    try {
+      const result = await db.select().from(users).where(eq(users.username, username));
+      return result[0];
+    } catch (error) {
+      console.error("Error in getUserByUsername:", error);
+      return undefined;
+    }
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await db.insert(users).values(insertUser).returning();
-    return result[0];
+    if (!db) {
+      throw new Error("Database not available");
+    }
+    
+    try {
+      // Handle null/undefined password for OAuth users
+      const userData = {
+        ...insertUser,
+        password: insertUser.password || null
+      };
+      
+      const result = await db.insert(users).values(userData).returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error in createUser:", error);
+      throw error;
+    }
   }
 }
 
@@ -54,11 +102,15 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      password: insertUser.password ?? null 
+    };
     this.users.set(id, user);
     return user;
   }
 }
 
-// Use database storage in production, memory storage in development
-export const storage = process.env.NODE_ENV === "production" ? new DbStorage() : new DbStorage();
+// Use database storage if available, otherwise fall back to memory storage
+export const storage = db ? new DbStorage() : new MemStorage();

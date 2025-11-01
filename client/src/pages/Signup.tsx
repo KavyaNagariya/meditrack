@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useLocation } from "wouter";
-import { signup } from "@/lib/auth";
+import { signup, isGoogleOAuthConfigured } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 
 export default function Signup() {
@@ -13,7 +13,35 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isGoogleConfigured, setIsGoogleConfigured] = useState(true);
   const [, navigate] = useLocation();
+
+  // Check for OAuth errors in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+    if (error) {
+      const errorMessages: Record<string, string> = {
+        google_auth_failed: "Google authentication failed. Please try again.",
+        callback_error: "An error occurred during authentication. Please try again.",
+      };
+      toast({
+        title: "Authentication Error",
+        description: errorMessages[error] || "An error occurred. Please try again.",
+        variant: "destructive",
+      });
+      // Clean up URL
+      navigate("/signup", { replace: true });
+    }
+    
+    // Check if Google OAuth is configured
+    const checkGoogleOAuth = async () => {
+      const configured = await isGoogleOAuthConfigured();
+      setIsGoogleConfigured(configured);
+    };
+    
+    checkGoogleOAuth();
+  }, [navigate]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +79,16 @@ export default function Signup() {
     }
   };
 
-  const handleGoogleSignup = () => {
+  const handleGoogleSignup = async () => {
+    if (!isGoogleConfigured) {
+      toast({
+        title: "Google OAuth Not Configured",
+        description: "Google authentication is not available. Please contact support.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     // Redirect to Google OAuth
     window.location.href = "/auth/google";
   };
@@ -117,6 +154,7 @@ export default function Signup() {
             variant="outline" 
             className="w-full"
             onClick={handleGoogleSignup}
+            disabled={!isGoogleConfigured}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path

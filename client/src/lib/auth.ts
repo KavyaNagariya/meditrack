@@ -79,3 +79,17 @@ export async function getCurrentUser(): Promise<{ userId: string } | null> {
 
   return response.json();
 }
+
+// Check if Google OAuth is configured on the backend
+export async function isGoogleOAuthConfigured(): Promise<boolean> {
+  try {
+    // Try to access the Google OAuth endpoint
+    const response = await fetch("/auth/google", { method: "HEAD", redirect: "manual" });
+    // If we get a redirect (302) or a specific error, Google OAuth is configured
+    // If we get a 500 or 404, it's not configured
+    return !(response.status === 500 || response.status === 404);
+  } catch (error) {
+    // If there's a network error, we assume it's configured
+    return true;
+  }
+}
