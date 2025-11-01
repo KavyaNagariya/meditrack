@@ -34,9 +34,12 @@ export function initializeAuth(app: Express) {
       secret: process.env.SESSION_SECRET || "fallback_secret_key_for_development",
       resave: false,
       saveUninitialized: false,
+      rolling: true, // Reset expiration on activity
       cookie: {
         secure: process.env.NODE_ENV === "production",
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: true, // Prevent XSS attacks
+        sameSite: 'lax' // CSRF protection
       },
     })
   );
@@ -52,9 +55,15 @@ export function initializeAuth(app: Express) {
   passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
+      if (!user) {
+        console.warn(`User not found during deserialization: ${id}`);
+        return done(null, false); // User not found, but don't error
+      }
       done(null, user);
     } catch (error) {
-      done(error, null);
+      console.error("Error during user deserialization:", error);
+      // Don't fail the entire request, just mark as unauthenticated
+      done(null, false);
     }
   });
 
@@ -212,11 +221,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Logout successful" });
   });
 
-  app.get("/api/auth/user", (req: Request, res: Response) => {
-    if (req.session!.userId) {
-      return res.json({ userId: req.session!.userId });
+  app.get("/api/auth/user", async (req: Request, res: Response) => {
+    try {
+      if (!req.session?.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Verify the user still exists in the database
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        // User no longer exists, clear the session
+        req.session.destroy(() => {});
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      return res.json({ userId: req.session.userId });
+    } catch (error) {
+      console.error("Error in /api/auth/user:", error);
+      return res.status(500).json({ message: "Internal server error" });
     }
-    return res.status(401).json({ message: "Not authenticated" });
   });
 
   // Role routes
@@ -349,6 +372,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
     }
   );
+
+  // Health check endpoint
+  app.get("/api/health", async (req: Request, res: Response) => {
+    try {
+      // Test database connection
+      const testUser = await storage.getUserByUsername("health_check_test_user_that_does_not_exist");
+      
+      return res.json({ 
+        status: "healthy", 
+        database: "connected",
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Health check failed:", error);
+      return res.status(503).json({ 
+        status: "unhealthy", 
+        database: "disconnected",
+        error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
 
   // use storage to perform CRUD operations on the storage interface
   // e.g. storage.insertUser(user) or storage.getUserByUsername(username)

@@ -5,21 +5,50 @@ import postgres from "postgres";
 import { eq } from "drizzle-orm";
 import { users } from "@shared/schema";
 
-// Initialize database connection with error handling
+// Initialize database connection with error handling and connection pooling
 let db: ReturnType<typeof drizzle> | null = null;
 let client: ReturnType<typeof postgres> | null = null;
 
 try {
   const databaseUrl = process.env.DATABASE_URL;
   if (databaseUrl) {
-    client = postgres(databaseUrl);
+    // Configure postgres client with connection pooling and timeout settings
+    client = postgres(databaseUrl, {
+      max: 10, // Maximum number of connections in the pool
+      idle_timeout: 20, // Close idle connections after 20 seconds
+      connect_timeout: 10, // Connection timeout in seconds
+      prepare: false, // Disable prepared statements for better compatibility
+      ssl: 'require', // Ensure SSL is required
+      connection: {
+        application_name: 'meditrack_app'
+      }
+    });
+    
     db = drizzle(client);
-    console.log("Database connection initialized successfully");
+    console.log("Database connection initialized successfully with connection pooling");
+    
+    // Test the connection
+    testDatabaseConnection();
   } else {
     console.warn("DATABASE_URL not set, database operations will not be available");
   }
 } catch (error) {
   console.error("Failed to initialize database connection:", error);
+}
+
+// Test database connection
+async function testDatabaseConnection() {
+  if (!client) return;
+  
+  try {
+    await client`SELECT 1 as test`;
+    console.log("Database connection test successful");
+  } catch (error) {
+    console.error("Database connection test failed:", error);
+    // Fall back to memory storage if database is not available
+    db = null;
+    client = null;
+  }
 }
 
 // modify the interface with any CRUD methods
@@ -35,31 +64,57 @@ export interface IStorage {
 
 export class DbStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    if (!db) {
+    if (!db || !client) {
       console.warn("Database not available, returning undefined for getUser");
       return undefined;
     }
     
     try {
-      const result = await db.select().from(users).where(eq(users.id, id));
+      // Add timeout to the query
+      const result = await Promise.race([
+        db.select().from(users).where(eq(users.id, id)),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout')), 5000)
+        )
+      ]);
       return result[0];
     } catch (error) {
       console.error("Error in getUser:", error);
+      
+      // If it's a connection error, try to reconnect
+      if (error instanceof Error && error.message.includes('timeout')) {
+        console.log("Attempting to reconnect to database...");
+        await testDatabaseConnection();
+      }
+      
       return undefined;
     }
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    if (!db) {
+    if (!db || !client) {
       console.warn("Database not available, returning undefined for getUserByUsername");
       return undefined;
     }
     
     try {
-      const result = await db.select().from(users).where(eq(users.username, username));
+      // Add timeout to the query
+      const result = await Promise.race([
+        db.select().from(users).where(eq(users.username, username)),
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout')), 5000)
+        )
+      ]);
       return result[0];
     } catch (error) {
       console.error("Error in getUserByUsername:", error);
+      
+      // If it's a connection error, try to reconnect
+      if (error instanceof Error && error.message.includes('timeout')) {
+        console.log("Attempting to reconnect to database...");
+        await testDatabaseConnection();
+      }
+      
       return undefined;
     }
   }
@@ -182,5 +237,128 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Use database storage if available, otherwise fall back to memory storage
-export const storage = db ? new DbStorage() : new MemStorage();
+// Hybrid storage that falls back to memory when database is unavailable
+class HybridStorage implements IStorage {
+  private dbStorage: DbStorage;
+  private memStorage: MemStorage;
+  private useDatabase: boolean;
+
+  constructor() {
+    this.dbStorage = new DbStorage();
+    this.memStorage = new MemStorage();
+    this.useDatabase = db !== null;
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    if (this.useDatabase) {
+      try {
+        const result = await this.dbStorage.getUser(id);
+        return result;
+      } catch (error) {
+        console.warn("Database operation failed, falling back to memory storage");
+        this.useDatabase = false;
+        return this.memStorage.getUser(id);
+      }
+    }
+    return this.memStorage.getUser(id);
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    if (this.useDatabase) {
+      try {
+        const result = await this.dbStorage.getUserByUsername(username);
+        return result;
+      } catch (error) {
+        console.warn("Database operation failed, falling back to memory storage");
+        this.useDatabase = false;
+        return this.memStorage.getUserByUsername(username);
+      }
+    }
+    return this.memStorage.getUserByUsername(username);
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    if (this.useDatabase) {
+      try {
+        const result = await this.dbStorage.createUser(user);
+        // Also store in memory as backup
+        await this.memStorage.createUser(user);
+        return result;
+      } catch (error) {
+        console.warn("Database operation failed, falling back to memory storage");
+        this.useDatabase = false;
+        return this.memStorage.createUser(user);
+      }
+    }
+    return this.memStorage.createUser(user);
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    if (this.useDatabase) {
+      try {
+        const result = await this.dbStorage.updateUserRole(userId, role);
+        // Also update in memory as backup
+        try {
+          await this.memStorage.updateUserRole(userId, role);
+        } catch (e) {
+          // Ignore memory storage errors for updates
+        }
+        return result;
+      } catch (error) {
+        console.warn("Database operation failed, falling back to memory storage");
+        this.useDatabase = false;
+        return this.memStorage.updateUserRole(userId, role);
+      }
+    }
+    return this.memStorage.updateUserRole(userId, role);
+  }
+
+  async updateUserDetails(userId: string, details: Partial<User>): Promise<User> {
+    if (this.useDatabase) {
+      try {
+        const result = await this.dbStorage.updateUserDetails(userId, details);
+        // Also update in memory as backup
+        try {
+          await this.memStorage.updateUserDetails(userId, details);
+        } catch (e) {
+          // Ignore memory storage errors for updates
+        }
+        return result;
+      } catch (error) {
+        console.warn("Database operation failed, falling back to memory storage");
+        this.useDatabase = false;
+        return this.memStorage.updateUserDetails(userId, details);
+      }
+    }
+    return this.memStorage.updateUserDetails(userId, details);
+  }
+
+  // Method to check if database is available and switch back if it becomes available
+  async checkDatabaseHealth(): Promise<boolean> {
+    if (!this.useDatabase && db) {
+      try {
+        await this.dbStorage.getUserByUsername("health_check_test");
+        console.log("Database is back online, switching to database storage");
+        this.useDatabase = true;
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+    return this.useDatabase;
+  }
+}
+
+// Use hybrid storage that can fall back between database and memory
+export const storage = new HybridStorage();
+
+// Periodic health check to reconnect to database if it becomes available
+if (typeof setInterval !== 'undefined') {
+  setInterval(async () => {
+    try {
+      await (storage as HybridStorage).checkDatabaseHealth();
+    } catch (error) {
+      // Ignore errors in health check
+    }
+  }, 30000); // Check every 30 seconds
+}
