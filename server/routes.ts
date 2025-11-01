@@ -6,6 +6,7 @@ import { Strategy as GoogleStrategy, type VerifyCallback } from "passport-google
 import session from "express-session";
 import { randomUUID } from "crypto";
 import type { Profile } from "passport-google-oauth20";
+import { type User, type InsertUser } from "@shared/schema";
 
 // Extend Express session type
 declare module "express-session" {
@@ -66,59 +67,74 @@ export function initializeAuth(app: Express) {
     console.log("  Callback URL:", callbackURL);
     console.log("  ⚠️  IMPORTANT: This callback URL must match EXACTLY in Google Cloud Console");
     
-    passport.use(
-      new GoogleStrategy(
-        {
-          clientID: googleClientId,
-          clientSecret: googleClientSecret,
-          callbackURL: callbackURL,
-        },
-        async (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => {
-          try {
-            console.log("Google OAuth profile received:", {
-              id: profile.id,
-              displayName: profile.displayName,
-              emails: profile.emails?.map(e => e.value),
-            });
-            
-            // Use email as username, fallback to profile ID
-            const username = profile.emails && profile.emails[0]?.value 
-              ? profile.emails[0].value 
-              : profile.id;
-            
-            if (!username) {
-              console.error("Google OAuth: No username available from profile");
-              return done(new Error("Unable to get user information from Google"), undefined);
-            }
-            
-            console.log("Using username for Google OAuth user:", username);
-            
-            // Check if user already exists
-            let user = await storage.getUserByUsername(username);
-            
-            if (!user) {
-              console.log("Creating new user for Google OAuth:", username);
-              // Create new user with no password for Google OAuth
-              user = await storage.createUser({
-                username: username,
-                password: null, // No password for Google auth users
-              });
-              console.log("New user created:", user.id);
-            } else {
-              console.log("Existing user found:", user.id);
-            }
-            
-            return done(null, user);
-          } catch (error) {
-            console.error("Google OAuth error:", error);
-            return done(error as Error, undefined);
-          }
+    passport.use(new GoogleStrategy({
+      clientID: googleClientId,
+      clientSecret: googleClientSecret,
+      callbackURL: callbackURL,
+    }, async (accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) => {
+      try {
+        console.log("Google OAuth profile received:", {
+          id: profile.id,
+          displayName: profile.displayName,
+          emails: profile.emails?.map(e => e.value),
+        });
+        
+        // Use email as username, fallback to profile ID
+        const username = profile.emails && profile.emails[0]?.value 
+          ? profile.emails[0].value 
+          : profile.id;
+        
+        if (!username) {
+          console.error("Google OAuth: No username available from profile");
+          return done(new Error("Unable to get user information from Google"), undefined);
         }
-      )
-    );
+        
+        console.log("Using username for Google OAuth user:", username);
+        
+        // Check if user already exists
+        let user = await storage.getUserByUsername(username);
+        
+        if (!user) {
+          console.log("Creating new user for Google OAuth:", username);
+          // Create new user with no password for Google OAuth
+          user = await storage.createUser({
+            username: username,
+            password: null, // No password for Google auth users
+            role: null,
+            name: profile.displayName || null,
+            contactNo: null,
+            age: null,
+            gender: null,
+            dateOfBirth: null,
+            occupation: null,
+            relationWithPatient: null,
+            patientName: null,
+            employeeId: null,
+            experience: null,
+            qualifications: null
+          } as InsertUser);
+          console.log("New user created:", user.id);
+        } else {
+          console.log("Existing user found:", user.id);
+        }
+        
+        return done(null, user);
+      } catch (error) {
+        console.error("Google OAuth error:", error);
+        return done(error as Error, undefined);
+      }
+    }));
   } else {
     console.warn("Google OAuth not configured - missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET");
   }
+}
+
+// Middleware to check if user is authenticated
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.session!.userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+  next();
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -203,6 +219,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.status(401).json({ message: "Not authenticated" });
   });
 
+  // Role routes
+  app.get("/api/auth/role", requireAuth, async (req: Request, res: Response) => {
+    try {
+      // Check if userId exists
+      if (!req.session || !req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      return res.json({ role: user.role || null });
+    } catch (error) {
+      console.error("Get role error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/role", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { role } = req.body;
+      
+      // Validate input
+      if (!role) {
+        return res.status(400).json({ message: "Role is required" });
+      }
+      
+      // Check if userId exists
+      if (!req.session || !req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Update user role
+      const updatedUser = await storage.updateUserRole(req.session.userId, role);
+      
+      return res.json({ message: "Role updated successfully" });
+    } catch (error) {
+      console.error("Set role error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // User details routes
+  app.get("/api/auth/details", requireAuth, async (req: Request, res: Response) => {
+    try {
+      // Check if userId exists
+      if (!req.session || !req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Return user details (excluding sensitive information)
+      const { id, username, password, ...details } = user;
+      return res.json(details);
+    } catch (error) {
+      console.error("Get details error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/details", requireAuth, async (req: Request, res: Response) => {
+    try {
+      // Check if userId exists
+      if (!req.session || !req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const details = req.body;
+      
+      // Update user details
+      const updatedUser = await storage.updateUserDetails(req.session.userId, details);
+      
+      return res.json({ message: "Details updated successfully" });
+    } catch (error) {
+      console.error("Set details error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   // Google OAuth routes
   app.get(
     "/auth/google",
@@ -239,8 +339,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.error("Google OAuth successful but user object is invalid:", req.user);
               return res.redirect("/login?error=callback_error");
             }
-            // Successful authentication, redirect to home
-            res.redirect("/");
+            // Successful authentication, redirect to role selection
+            res.redirect("/role-selection");
           } catch (error) {
             console.error("Google OAuth callback error:", error);
             res.redirect("/login?error=callback_error");

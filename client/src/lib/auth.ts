@@ -20,6 +20,24 @@ interface AuthResponse {
   };
 }
 
+interface UserRole {
+  role: string | null;
+}
+
+interface UserDetails {
+  name?: string;
+  contactNo?: string;
+  age?: number;
+  gender?: string;
+  dateOfBirth?: string;
+  occupation?: string;
+  relationWithPatient?: string;
+  patientName?: string;
+  experience?: number;
+  qualifications?: string;
+  employeeId?: string;
+}
+
 export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
   const response = await fetch(`${API_BASE_URL}/login`, {
     method: "POST",
@@ -91,5 +109,73 @@ export async function isGoogleOAuthConfigured(): Promise<boolean> {
   } catch (error) {
     // If there's a network error, we assume it's configured
     return true;
+  }
+}
+
+// Get user role
+export async function getUserRole(): Promise<UserRole> {
+  const response = await fetch(`${API_BASE_URL}/role`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch user role");
+  }
+
+  return response.json();
+}
+
+// Set user role
+export async function setUserRole(role: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/role`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ role }),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to set user role");
+  }
+}
+
+// Get user details
+export async function getUserDetails(): Promise<UserDetails> {
+  const response = await fetch(`${API_BASE_URL}/details`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch user details");
+  }
+
+  return response.json();
+}
+
+// Set user details
+export async function setUserDetails(details: UserDetails): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/details`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(details),
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Failed to save user details");
   }
 }

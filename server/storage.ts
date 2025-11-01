@@ -29,6 +29,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUserRole(userId: string, role: string): Promise<User>;
+  updateUserDetails(userId: string, details: Partial<User>): Promise<User>;
 }
 
 export class DbStorage implements IStorage {
@@ -69,7 +71,7 @@ export class DbStorage implements IStorage {
     
     try {
       // Handle null/undefined password for OAuth users
-      const userData = {
+      const userData: any = {
         ...insertUser,
         password: insertUser.password || null
       };
@@ -78,6 +80,40 @@ export class DbStorage implements IStorage {
       return result[0];
     } catch (error) {
       console.error("Error in createUser:", error);
+      throw error;
+    }
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    if (!db) {
+      throw new Error("Database not available");
+    }
+    
+    try {
+      const result = await db.update(users)
+        .set({ role })
+        .where(eq(users.id, userId))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error in updateUserRole:", error);
+      throw error;
+    }
+  }
+
+  async updateUserDetails(userId: string, details: Partial<User>): Promise<User> {
+    if (!db) {
+      throw new Error("Database not available");
+    }
+    
+    try {
+      const result = await db.update(users)
+        .set(details)
+        .where(eq(users.id, userId))
+        .returning();
+      return result[0];
+    } catch (error) {
+      console.error("Error in updateUserDetails:", error);
       throw error;
     }
   }
@@ -103,12 +139,46 @@ export class MemStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = randomUUID();
     const user: User = { 
-      ...insertUser, 
       id,
-      password: insertUser.password ?? null 
+      username: insertUser.username,
+      password: insertUser.password ?? null,
+      role: insertUser.role ?? null,
+      name: insertUser.name ?? null,
+      contactNo: insertUser.contactNo ?? null,
+      age: insertUser.age ?? null,
+      gender: insertUser.gender ?? null,
+      dateOfBirth: insertUser.dateOfBirth ?? null,
+      occupation: insertUser.occupation ?? null,
+      relationWithPatient: insertUser.relationWithPatient ?? null,
+      patientName: insertUser.patientName ?? null,
+      employeeId: insertUser.employeeId ?? null,
+      experience: insertUser.experience ?? null,
+      qualifications: insertUser.qualifications ?? null
     };
     this.users.set(id, user);
     return user;
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    const updatedUser = { ...user, role };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUserDetails(userId: string, details: Partial<User>): Promise<User> {
+    const user = this.users.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    
+    const updatedUser = { ...user, ...details };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
   }
 }
 

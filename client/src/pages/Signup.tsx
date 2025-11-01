@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useLocation } from "wouter";
-import { signup, isGoogleOAuthConfigured } from "@/lib/auth";
+import { signup } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 
 export default function Signup() {
@@ -13,7 +13,6 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isGoogleConfigured, setIsGoogleConfigured] = useState(true);
   const [, navigate] = useLocation();
 
   // Check for OAuth errors in URL
@@ -33,14 +32,6 @@ export default function Signup() {
       // Clean up URL
       navigate("/signup", { replace: true });
     }
-    
-    // Check if Google OAuth is configured
-    const checkGoogleOAuth = async () => {
-      const configured = await isGoogleOAuthConfigured();
-      setIsGoogleConfigured(configured);
-    };
-    
-    checkGoogleOAuth();
   }, [navigate]);
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -63,10 +54,11 @@ export default function Signup() {
       console.log("Signup successful:", response);
       toast({
         title: "Success",
-        description: "Account created successfully. You are now logged in.",
+        description: "Account created successfully. Please select your role.",
       });
-      // Redirect to home page after signup
-      navigate("/");
+      
+      // Redirect to role selection page
+      navigate("/role-selection");
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
@@ -79,27 +71,13 @@ export default function Signup() {
     }
   };
 
-  const handleGoogleSignup = async () => {
-    if (!isGoogleConfigured) {
-      toast({
-        title: "Google OAuth Not Configured",
-        description: "Google authentication is not available. Please contact support.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Redirect to Google OAuth
-    window.location.href = "/auth/google";
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
           <CardDescription className="text-center">
-            Enter your information to get started with MediTrack Pro
+            Enter your information to create your MediTrack Pro account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -153,8 +131,7 @@ export default function Signup() {
           <Button 
             variant="outline" 
             className="w-full"
-            onClick={handleGoogleSignup}
-            disabled={!isGoogleConfigured}
+            onClick={() => window.location.href = "/auth/google"}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
@@ -185,7 +162,7 @@ export default function Signup() {
               className="p-0 h-auto font-medium text-primary hover:underline"
               onClick={() => navigate("/login")}
             >
-              Log in
+              Sign in
             </Button>
           </div>
         </CardFooter>

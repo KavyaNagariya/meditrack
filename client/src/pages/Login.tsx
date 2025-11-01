@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useLocation } from "wouter";
-import { login, isGoogleOAuthConfigured } from "@/lib/auth";
+import { login, isGoogleOAuthConfigured, getUserRole } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -53,8 +53,21 @@ export default function Login() {
         title: "Success",
         description: "You have been logged in successfully.",
       });
-      // Redirect to home page after login
-      navigate("/");
+      
+      // Check if user has already selected a role
+      try {
+        const roleResponse = await getUserRole();
+        if (roleResponse.role) {
+          // User already has a role, redirect to their dashboard
+          navigate(`/dashboard/${roleResponse.role}`);
+        } else {
+          // User needs to select a role
+          navigate("/role-selection");
+        }
+      } catch (error) {
+        // If we can't get the role, redirect to role selection
+        navigate("/role-selection");
+      }
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
