@@ -1,7 +1,9 @@
 import { Button } from "@/components/ui/button";
 import dashboardImage from "@assets/generated_images/Hospital_contact_tracing_dashboard_3c51ffd1.png";
+import { useLocation } from "wouter";
 
 export default function Hero() {
+  const [, navigate] = useLocation();
 
   return (
     <section id="home" className="container px-6 py-20 md:px-8 md:py-24">
@@ -14,10 +16,10 @@ export default function Hero() {
             Real-time MDR contact tracing, automated risk alerts, and a unified infection-control dashboard for hospitals.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-4 md:hidden">
-            <Button variant="outline" data-testid="button-hero-login">
+            <Button variant="outline" data-testid="button-hero-login" onClick={() => navigate("/login")}>
               Login
             </Button>
-            <Button data-testid="button-hero-signup">
+            <Button data-testid="button-hero-signup" onClick={() => navigate("/signup")}>
               Sign Up
             </Button>
           </div>

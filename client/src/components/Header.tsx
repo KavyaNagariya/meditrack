@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Activity } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [, navigate] = useLocation();
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
@@ -55,10 +57,10 @@ export default function Header() {
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
-          <Button variant="outline" data-testid="button-login">
+          <Button variant="outline" data-testid="button-login" onClick={() => navigate("/login")}>
             Login
           </Button>
-          <Button data-testid="button-signup">Sign Up</Button>
+          <Button data-testid="button-signup" onClick={() => navigate("/signup")}>Sign Up</Button>
         </div>
 
         <button
@@ -102,10 +104,10 @@ export default function Header() {
               FAQ
             </button>
             <div className="flex flex-col gap-2 pt-4">
-              <Button variant="outline" className="w-full" data-testid="button-mobile-login">
+              <Button variant="outline" className="w-full" data-testid="button-mobile-login" onClick={() => navigate("/login")}>
                 Login
               </Button>
-              <Button className="w-full" data-testid="button-mobile-signup">
+              <Button className="w-full" data-testid="button-mobile-signup" onClick={() => navigate("/signup")}>
                 Sign Up
               </Button>
             </div>
