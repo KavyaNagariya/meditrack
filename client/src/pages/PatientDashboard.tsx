@@ -96,6 +96,26 @@ export default function PatientDashboard() {
               <Button variant="ghost" size="sm" className="text-white hover:bg-blue-700">
                 <Settings className="h-4 w-4" />
               </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white hover:bg-blue-700"
+                onClick={async () => {
+                  try {
+                    const response = await fetch("/api/auth/logout", {
+                      method: "POST",
+                      credentials: "include"
+                    });
+                    if (response.ok) {
+                      navigate("/login");
+                    }
+                  } catch (error) {
+                    console.error("Logout error:", error);
+                  }
+                }}
+              >
+                Logout
+              </Button>
               <div className="flex items-center space-x-2">
                 <div className="bg-blue-500 rounded-full p-2">
                   <span className="text-sm font-medium">

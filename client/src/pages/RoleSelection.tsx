@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { getCurrentUser, setUserRole } from "@/lib/auth";
+import { getCurrentUser, getProfileStatus, getRedirectPath } from "@/lib/auth";
 
 const ROLES = [
   { value: "patient", label: "Patient" },
@@ -19,13 +19,22 @@ export default function RoleSelection() {
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    // Check if user is authenticated
-    const checkAuth = async () => {
+    // Check if user is authenticated and handle smart redirect
+    const checkAuthAndRedirect = async () => {
       try {
         const user = await getCurrentUser();
         if (!user) {
-          // If not authenticated, redirect to login
           navigate("/login");
+          return;
+        }
+        
+        // Check if user already has complete profile
+        const profileStatus = await getProfileStatus();
+        if (profileStatus && profileStatus.hasRole) {
+          const redirectPath = getRedirectPath(profileStatus);
+          if (redirectPath !== "/role-selection") {
+            navigate(redirectPath, { replace: true });
+          }
         }
       } catch (error) {
         console.error("Auth check failed:", error);
@@ -33,7 +42,7 @@ export default function RoleSelection() {
       }
     };
 
-    checkAuth();
+    checkAuthAndRedirect();
   }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +59,19 @@ export default function RoleSelection() {
     setLoading(true);
     try {
       // Save role to user profile
-      await setUserRole(role);
+      const response = await fetch("/api/auth/role", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ role }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save role");
+      }
 
       toast({
         title: "Success",
@@ -59,11 +80,11 @@ export default function RoleSelection() {
 
       // Redirect to role-specific details form
       navigate(`/details/${role}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Role selection error:", error);
       toast({
         title: "Error",
-        description: "Failed to save role. Please try again.",
+        description: error.message || "Failed to save role. Please try again.",
         variant: "destructive",
       });
     } finally {

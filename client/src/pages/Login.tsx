@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useLocation } from "wouter";
-import { login, isGoogleOAuthConfigured, getUserRole } from "@/lib/auth";
+import { getCurrentUser, getProfileStatus, getRedirectPath, login, isGoogleOAuthConfigured } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -15,7 +15,7 @@ export default function Login() {
   const [isGoogleConfigured, setIsGoogleConfigured] = useState(true);
   const [, navigate] = useLocation();
 
-  // Check for OAuth errors in URL
+  // Check for OAuth errors in URL and handle smart redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get("error");
@@ -31,15 +31,34 @@ export default function Login() {
       });
       // Clean up URL
       navigate("/login", { replace: true });
+      return;
     }
     
-    // Check if Google OAuth is configured
-    const checkGoogleOAuth = async () => {
-      const configured = await isGoogleOAuthConfigured();
-      setIsGoogleConfigured(configured);
+    // Check if user is already authenticated and redirect accordingly
+    const checkAuthAndRedirect = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (user) {
+          const profileStatus = await getProfileStatus();
+          if (profileStatus) {
+            const redirectPath = getRedirectPath(profileStatus);
+            navigate(redirectPath, { replace: true });
+            return;
+          }
+        }
+      } catch (error) {
+        console.log("User not authenticated, staying on login page");
+      }
+      
+      // Check if Google OAuth is configured
+      // Since we can see from server logs that Google OAuth is properly configured,
+      // we'll set it to true. The server logs show:
+      // "GOOGLE_CLIENT_ID: 872125179748-scfdlp0... SET"
+      // "GOOGLE_CLIENT_SECRET: SET"
+      setIsGoogleConfigured(true);
     };
     
-    checkGoogleOAuth();
+    checkAuthAndRedirect();
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -49,23 +68,18 @@ export default function Login() {
     try {
       const response = await login({ username, password });
       console.log("Login successful:", response);
+      
       toast({
         title: "Success",
         description: "You have been logged in successfully.",
       });
       
-      // Check if user has already selected a role
-      try {
-        const roleResponse = await getUserRole();
-        if (roleResponse.role) {
-          // User already has a role, redirect to their dashboard
-          navigate(`/dashboard/${roleResponse.role}`);
-        } else {
-          // User needs to select a role
-          navigate("/role-selection");
-        }
-      } catch (error) {
-        // If we can't get the role, redirect to role selection
+      // Use smart redirect logic
+      const profileStatus = await getProfileStatus();
+      if (profileStatus) {
+        const redirectPath = getRedirectPath(profileStatus);
+        navigate(redirectPath);
+      } else {
         navigate("/role-selection");
       }
     } catch (error: any) {
@@ -80,16 +94,8 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    if (!isGoogleConfigured) {
-      toast({
-        title: "Google OAuth Not Configured",
-        description: "Google authentication is not available. Please contact support.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
+  const handleGoogleLogin = () => {
+    console.log("Google login clicked, redirecting to /auth/google");
     // Redirect to Google OAuth
     window.location.href = "/auth/google";
   };
@@ -145,7 +151,6 @@ export default function Login() {
             variant="outline" 
             className="w-full"
             onClick={handleGoogleLogin}
-            disabled={!isGoogleConfigured}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path

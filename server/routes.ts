@@ -6,7 +6,13 @@ import { Strategy as GoogleStrategy, type VerifyCallback } from "passport-google
 import session from "express-session";
 import { randomUUID } from "crypto";
 import type { Profile } from "passport-google-oauth20";
-import { type User, type InsertUser } from "@shared/schema";
+import { 
+  type User, 
+  type InsertUser, 
+  type InsertPatient, 
+  type InsertDoctor, 
+  type InsertFamilyMember 
+} from "@shared/schema";
 
 // Extend Express session type
 declare module "express-session" {
@@ -109,18 +115,7 @@ export function initializeAuth(app: Express) {
           user = await storage.createUser({
             username: username,
             password: null, // No password for Google auth users
-            role: null,
-            name: profile.displayName || null,
-            contactNo: null,
-            age: null,
-            gender: null,
-            dateOfBirth: null,
-            occupation: null,
-            relationWithPatient: null,
-            patientName: null,
-            employeeId: null,
-            experience: null,
-            qualifications: null
+            role: null
           } as InsertUser);
           console.log("New user created:", user.id);
         } else {
@@ -217,8 +212,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/logout", (req: Request, res: Response) => {
-    req.session!.destroy(() => {});
-    res.json({ message: "Logout successful" });
+    req.session!.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.clearCookie('connect.sid'); // Clear the session cookie
+      res.json({ message: "Logout successful" });
+    });
   });
 
   app.get("/api/auth/user", async (req: Request, res: Response) => {
@@ -288,7 +289,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // User details routes
   app.get("/api/auth/details", requireAuth, async (req: Request, res: Response) => {
     try {
-      // Check if userId exists
+      if (!req.session || !req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const userWithRoleData = await storage.getUserWithRoleData(req.session.userId);
+      if (!userWithRoleData) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const { user, roleData } = userWithRoleData;
+      
+      // Return role-specific data
+      return res.json({
+        role: user.role,
+        ...roleData
+      });
+    } catch (error) {
+      console.error("Get details error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post("/api/auth/details", requireAuth, async (req: Request, res: Response) => {
+    try {
       if (!req.session || !req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -298,26 +322,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Return user details (excluding sensitive information)
-      const { id, username, password, ...details } = user;
-      return res.json(details);
-    } catch (error) {
-      console.error("Get details error:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  app.post("/api/auth/details", requireAuth, async (req: Request, res: Response) => {
-    try {
-      // Check if userId exists
-      if (!req.session || !req.session.userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
       const details = req.body;
+      const userId = req.session.userId;
       
-      // Update user details
-      const updatedUser = await storage.updateUserDetails(req.session.userId, details);
+      // Handle role-specific data creation/update
+      switch (user.role) {
+        case 'patient':
+          const existingPatient = await storage.getPatientByUserId(userId);
+          if (existingPatient) {
+            await storage.updatePatient(userId, details);
+          } else {
+            await storage.createPatient({ ...details, userId });
+          }
+          break;
+          
+        case 'doctor':
+          const existingDoctor = await storage.getDoctorByUserId(userId);
+          if (existingDoctor) {
+            await storage.updateDoctor(userId, details);
+          } else {
+            await storage.createDoctor({ ...details, userId });
+          }
+          break;
+          
+        case 'family':
+          const existingFamily = await storage.getFamilyMemberByUserId(userId);
+          if (existingFamily) {
+            await storage.updateFamilyMember(userId, details);
+          } else {
+            // For family members, we need to handle patient linking
+            // For now, we'll create a placeholder patient if patientId is not provided
+            let patientId = details.patientId;
+            if (!patientId) {
+              // Create a placeholder patient or handle this differently based on your requirements
+              patientId = "placeholder-patient-id";
+            }
+            await storage.createFamilyMember({ ...details, userId, patientId });
+          }
+          break;
+          
+        default:
+          return res.status(400).json({ message: "Invalid user role" });
+      }
       
       return res.json({ message: "Details updated successfully" });
     } catch (error) {
@@ -372,6 +418,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
     }
   );
+
+  // Check if user has complete profile
+  app.get("/api/auth/profile-status", requireAuth, async (req: Request, res: Response) => {
+    try {
+      if (!req.session || !req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      const userWithRoleData = await storage.getUserWithRoleData(req.session.userId);
+      if (!userWithRoleData) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const { user, roleData } = userWithRoleData;
+      
+      return res.json({
+        hasRole: !!user.role,
+        hasRoleData: !!roleData,
+        role: user.role,
+        shouldRedirectToDashboard: !!(user.role && roleData)
+      });
+    } catch (error) {
+      console.error("Profile status error:", error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  });
 
   // Health check endpoint
   app.get("/api/health", async (req: Request, res: Response) => {
