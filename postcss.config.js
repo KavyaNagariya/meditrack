@@ -1,5 +1,5 @@
 export default {
-  from: undefined, // 👈 Add this line to suppress the warning
+  from: undefined, // ✅ This suppresses the warning
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
