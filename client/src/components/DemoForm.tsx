@@ -1,18 +1,20 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 
 export default function DemoForm() {
   const [formData, setFormData] = useState({
     firstName: "",
+    lastName: "",
     email: "",
-    hospital: "",
-    beds: "",
+    organization: "",
+    role: "",
+    message: "",
     acceptPrivacy: false,
   });
   const { toast } = useToast();
@@ -26,9 +28,11 @@ export default function DemoForm() {
     });
     setFormData({
       firstName: "",
+      lastName: "",
       email: "",
-      hospital: "",
-      beds: "",
+      organization: "",
+      role: "",
+      message: "",
       acceptPrivacy: false,
     });
   };
@@ -41,99 +45,101 @@ export default function DemoForm() {
             Request a Demo
           </h2>
           <p className="mt-3 text-muted-foreground" data-testid="demo-subtitle">
-            See how MediTrack Pro can protect your hospital
+            See how CodeVeda can transform your healthcare organization
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-          <div>
-            <Label htmlFor="firstName" data-testid="label-first-name">
-              First Name
-            </Label>
-            <Input
-              id="firstName"
-              type="text"
-              required
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              className="mt-2"
-              data-testid="input-first-name"
-            />
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="firstName" data-testid="label-first-name">
+                First Name
+              </Label>
+              <Input
+                id="firstName"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+                data-testid="input-first-name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="lastName" data-testid="label-last-name">
+                Last Name
+              </Label>
+              <Input
+                id="lastName"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+                data-testid="input-last-name"
+              />
+            </div>
           </div>
-
           <div>
             <Label htmlFor="email" data-testid="label-email">
-              Email
+              Work Email
             </Label>
             <Input
               id="email"
               type="email"
-              required
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="mt-2"
+              required
               data-testid="input-email"
             />
           </div>
-
           <div>
-            <Label htmlFor="hospital" data-testid="label-hospital">
-              Hospital Name
+            <Label htmlFor="organization" data-testid="label-organization">
+              Organization
             </Label>
             <Input
-              id="hospital"
-              type="text"
+              id="organization"
+              value={formData.organization}
+              onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
               required
-              value={formData.hospital}
-              onChange={(e) => setFormData({ ...formData, hospital: e.target.value })}
-              className="mt-2"
-              data-testid="input-hospital"
+              data-testid="input-organization"
             />
           </div>
-
           <div>
-            <Label htmlFor="beds" data-testid="label-beds">
-              Number of Beds
+            <Label htmlFor="role" data-testid="label-role">
+              Role
             </Label>
-            <Select value={formData.beds} onValueChange={(value) => setFormData({ ...formData, beds: value })}>
-              <SelectTrigger className="mt-2" data-testid="select-beds">
-                <SelectValue placeholder="Select bed count" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="<100" data-testid="select-option-0">
-                  Less than 100
-                </SelectItem>
-                <SelectItem value="100-300" data-testid="select-option-1">
-                  100–300
-                </SelectItem>
-                <SelectItem value="300-500" data-testid="select-option-2">
-                  300–500
-                </SelectItem>
-                <SelectItem value="500+" data-testid="select-option-3">
-                  500+
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              id="role"
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              required
+              data-testid="input-role"
+            />
           </div>
-
-          <div className="flex items-start gap-3">
+          <div>
+            <Label htmlFor="message" data-testid="label-message">
+              What would you like to see in the demo?
+            </Label>
+            <Textarea
+              id="message"
+              rows={4}
+              value={formData.message}
+              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              placeholder="Tell us about your specific needs and challenges..."
+              data-testid="input-message"
+            />
+          </div>
+          <div className="flex items-start space-x-2">
             <Checkbox
-              id="privacy"
+              id="acceptPrivacy"
               checked={formData.acceptPrivacy}
               onCheckedChange={(checked) => setFormData({ ...formData, acceptPrivacy: checked as boolean })}
+              required
               data-testid="checkbox-privacy"
             />
-            <Label htmlFor="privacy" className="text-sm leading-relaxed" data-testid="label-privacy">
-              I agree to the{" "}
-              <a href="#privacy" className="text-primary underline">
-                Privacy Policy
-              </a>{" "}
-              and consent to be contacted about MediTrack Pro
+            <Label htmlFor="acceptPrivacy" className="text-sm" data-testid="label-privacy">
+              I consent to be contacted about CodeVeda and accept the Privacy Policy
             </Label>
           </div>
-
-          <Button type="submit" className="w-full md:w-auto md:px-12" disabled={!formData.acceptPrivacy} data-testid="button-submit-demo">
-            Schedule My Demo
+          <Button type="submit" className="w-full" data-testid="button-submit">
+            Request Demo
           </Button>
         </form>
       </Card>

@@ -1,6 +1,6 @@
 # Environment Variables Setup Guide
 
-This document explains how to set up all required and optional environment variables for MediTrack Pro.
+This document explains how to set up all required and optional environment variables for CodeVeda.
 
 ## Required Environment Variables
 
@@ -198,4 +198,3 @@ SESSION_SECRET=<paste_generated_secret_here>
 4. Use **HTTPS in production** (required for secure cookies)
 5. Keep secrets **encrypted** in production environments
 6. Use **environment variable management** services (e.g., AWS Secrets Manager, HashiCorp Vault) for production
-

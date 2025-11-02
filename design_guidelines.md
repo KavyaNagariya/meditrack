@@ -1,4 +1,4 @@
-# MediTrack Pro - Design Guidelines
+# CodeVeda - Design Guidelines
 
 ## Design Approach
 **System Selected:** Material Design principles adapted for healthcare context
@@ -38,7 +38,7 @@
 
 ### Header (Sticky)
 - Height: h-20 with backdrop-blur-md
-- Logo: h-8 with hospital cross icon
+- Logo: h-8 with healthcare icon
 - Navigation: hidden md:flex with gap-8, text-sm font-medium
 - Buttons: Sign Up (primary solid) + Login (secondary outline) on right
 - Mobile: Hamburger menu with slide-out drawer
@@ -65,7 +65,7 @@
 ### Benefits/Trust Section
 - Top: 3 stat cards (grid-cols-3) with large numbers (3rem) + description
 - Bottom: Trust badge row with icons for HIPAA, encryption, uptime (grid-cols-4, items-center)
-- Optional testimonial: Single card with quote, attribution, hospital logo (max-w-3xl centered)
+- Optional testimonial: Single card with quote, attribution, organization logo (max-w-3xl centered)
 
 ### Demo Form (Inline Section)
 - Max width: max-w-2xl centered with p-12 background card
@@ -90,9 +90,9 @@
 
 **Hero Dashboard Mockup:**
 - Position: Right side of hero (40% width on desktop)
-- Style: Modern dashboard UI showing contact tracing network visualization with node connections
+- Style: Modern dashboard UI showing healthcare analytics with data visualizations
 - Treatment: Floating with shadow (shadow-2xl), slight 3D perspective tilt
-- Alt text: "MediTrack Pro dashboard showing real-time contact tracing network with exposure chains and risk alerts"
+- Alt text: "CodeVeda dashboard showing real-time healthcare monitoring with alerts and analytics"
 
 **Feature Icons:**
 - Use Heroicons for all 6 feature cards via CDN

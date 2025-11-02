@@ -7,7 +7,7 @@ const plans = [
     name: "Starter",
     price: "$2,499",
     period: "per month",
-    description: "Perfect for small hospitals and clinics",
+    description: "Perfect for small healthcare facilities and clinics",
     features: [
       "Up to 100 beds",
       "Real-time contact tracing",
@@ -20,7 +20,7 @@ const plans = [
     name: "Professional",
     price: "$4,999",
     period: "per month",
-    description: "For mid-size hospitals",
+    description: "For mid-size healthcare facilities",
     features: [
       "Up to 500 beds",
       "Advanced analytics",
@@ -35,7 +35,7 @@ const plans = [
     name: "Enterprise",
     price: "Custom",
     period: "contact us",
-    description: "For large hospital systems",
+    description: "For large healthcare organizations",
     features: [
       "Unlimited beds",
       "Multi-facility support",
@@ -56,7 +56,7 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </h2>
           <p className="mt-4 text-lg text-muted-foreground" data-testid="pricing-subtitle">
-            Choose the plan that fits your hospital's needs
+            Choose the plan that fits your healthcare organization's needs
           </p>
         </div>
 

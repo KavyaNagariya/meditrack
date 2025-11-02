@@ -1,181 +1,218 @@
-// Auth service for handling authentication API calls
+// Authentication utility functions
 
-const API_BASE_URL = "/api/auth";
-
-interface LoginCredentials {
-  username: string;
-  password: string;
+export interface AuthUser {
+  userId: string;
 }
 
-interface SignupCredentials {
-  username: string;
-  password: string;
-}
-
-interface AuthResponse {
-  message: string;
-  user?: {
-    id: string;
-    username: string;
-  };
-}
-
-interface UserRole {
+export interface UserRole {
   role: string | null;
 }
 
-interface UserDetails {
-  name?: string;
-  contactNo?: string;
-  age?: number;
-  gender?: string;
-  dateOfBirth?: string;
-  occupation?: string;
-  relationWithPatient?: string;
-  patientName?: string;
-  experience?: number;
-  qualifications?: string;
-  employeeId?: string;
+export interface ProfileStatus {
+  hasRole: boolean;
+  hasRoleData: boolean;
+  role: string | null;
+  shouldRedirectToDashboard: boolean;
 }
 
-export async function login(credentials: LoginCredentials): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/login`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(credentials),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Login failed");
-  }
-
-  return response.json();
-}
-
-export async function signup(credentials: SignupCredentials): Promise<AuthResponse> {
-  const response = await fetch(`${API_BASE_URL}/signup`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(credentials),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Signup failed");
-  }
-
-  return response.json();
-}
-
-export async function logout(): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/logout`, {
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Logout failed");
-  }
-}
-
-export async function getCurrentUser(): Promise<{ userId: string } | null> {
-  const response = await fetch(`${API_BASE_URL}/user`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  try {
+    const response = await fetch("/api/auth/user", {
+      credentials: "include",
+    });
+    
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting current user:", error);
     return null;
   }
-
-  return response.json();
 }
 
-// Check if Google OAuth is configured on the backend
+export async function getUserRole(): Promise<UserRole> {
+  try {
+    const response = await fetch("/api/auth/role", {
+      credentials: "include",
+    });
+    
+    if (response.ok) {
+      return await response.json();
+    }
+    return { role: null };
+  } catch (error) {
+    console.error("Error getting user role:", error);
+    return { role: null };
+  }
+}
+
+export async function getUserDetails(): Promise<any> {
+  try {
+    const response = await fetch("/api/auth/details", {
+      credentials: "include",
+    });
+    
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting user details:", error);
+    return null;
+  }
+}
+
+export async function getProfileStatus(): Promise<ProfileStatus | null> {
+  try {
+    const response = await fetch("/api/auth/profile-status", {
+      credentials: "include",
+    });
+    
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting profile status:", error);
+    return null;
+  }
+}
+
+export async function logout(): Promise<boolean> {
+  try {
+    const response = await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+    
+    return response.ok;
+  } catch (error) {
+    console.error("Error during logout:", error);
+    return false;
+  }
+}
+
+// Smart redirect function
+export function getRedirectPath(profileStatus: ProfileStatus): string {
+  if (!profileStatus.hasRole) {
+    return "/role-selection";
+  }
+  
+  if (!profileStatus.hasRoleData) {
+    return `/details/${profileStatus.role}`;
+  }
+  
+  return `/dashboard/${profileStatus.role}`;
+}
+
+// Additional auth functions for backward compatibility
+export async function signup(credentials: { username: string; password: string }): Promise<any> {
+  try {
+    const response = await fetch("/api/auth/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(credentials),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Signup failed");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Signup error:", error);
+    throw error;
+  }
+}
+
+export async function login(credentials: { username: string; password: string }): Promise<any> {
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(credentials),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Login failed");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error;
+  }
+}
+
+export async function setUserDetails(details: any): Promise<any> {
+  try {
+    const response = await fetch("/api/auth/details", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(details),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to update details");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Set details error:", error);
+    throw error;
+  }
+}
+
+export async function setUserRole(role: string): Promise<any> {
+  try {
+    const response = await fetch("/api/auth/role", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({ role }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to set role");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("Set role error:", error);
+    throw error;
+  }
+}
+
 export async function isGoogleOAuthConfigured(): Promise<boolean> {
   try {
-    // Try to access the Google OAuth endpoint
-    const response = await fetch("/auth/google", { method: "HEAD", redirect: "manual" });
-    // If we get a redirect (302) or a specific error, Google OAuth is configured
-    // If we get a 500 or 404, it's not configured
-    return !(response.status === 500 || response.status === 404);
+    // Make a simple GET request to check if the endpoint exists
+    const response = await fetch("/auth/google", { 
+      method: "GET",
+      redirect: "manual" // Don't follow redirects
+    });
+    
+    // If we get a redirect (302/301) or success (200), Google OAuth is configured
+    // If we get 500, it means the configuration is missing
+    return response.status !== 500;
   } catch (error) {
-    // If there's a network error, we assume it's configured
+    // If there's a network error, assume it's configured
+    console.log("Google OAuth configuration check failed, assuming configured:", error);
     return true;
-  }
-}
-
-// Get user role
-export async function getUserRole(): Promise<UserRole> {
-  const response = await fetch(`${API_BASE_URL}/role`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch user role");
-  }
-
-  return response.json();
-}
-
-// Set user role
-export async function setUserRole(role: string): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/role`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ role }),
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to set user role");
-  }
-}
-
-// Get user details
-export async function getUserDetails(): Promise<UserDetails> {
-  const response = await fetch(`${API_BASE_URL}/details`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch user details");
-  }
-
-  return response.json();
-}
-
-// Set user details
-export async function setUserDetails(details: UserDetails): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/details`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(details),
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Failed to save user details");
   }
 }

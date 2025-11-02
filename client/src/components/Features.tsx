@@ -20,12 +20,12 @@ const features = [
   {
     icon: Database,
     title: "EHR/Lab-friendly integration",
-    description: "Seamlessly integrate with existing hospital systems and lab results for automated MDR detection.",
+    description: "Seamlessly integrate with existing healthcare systems and lab results for automated infection detection.",
   },
   {
     icon: BarChart3,
     title: "Infection-control dashboard with ward heatmaps",
-    description: "View comprehensive analytics and visual heatmaps showing risk distribution across hospital wards.",
+    description: "View comprehensive analytics and visual heatmaps showing risk distribution across healthcare facilities.",
   },
   {
     icon: Shield,
@@ -43,7 +43,7 @@ export default function Features() {
             Key Features
           </h2>
           <p className="mt-4 text-lg text-muted-foreground" data-testid="features-subtitle">
-            Everything you need to detect, trace, and contain MDR outbreaks in real-time.
+            Everything you need to detect, trace, and contain infection outbreaks in real-time.
           </p>
         </div>
 

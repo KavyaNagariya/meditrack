@@ -2,9 +2,9 @@ import { Card } from "@/components/ui/card";
 import { Shield, Lock, Server, CheckCircle2 } from "lucide-react";
 
 const stats = [
-  { value: "73%", label: "Faster outbreak response time" },
-  { value: "45%", label: "Reduction in cross-contamination" },
-  { value: "60%", label: "Lower containment costs" },
+  { value: "85%", label: "Faster health data access" },
+  { value: "60%", label: "Reduction in healthcare costs" },
+  { value: "95%", label: "User satisfaction rate" },
 ];
 
 const trustBadges = [
@@ -23,7 +23,7 @@ export default function Benefits() {
             Proven Results
           </h2>
           <p className="mt-4 text-lg text-muted-foreground" data-testid="benefits-subtitle">
-            Trusted by leading hospitals to protect patients and staff
+            Trusted by leading healthcare providers to improve patient outcomes
           </p>
         </div>
 
@@ -33,43 +33,40 @@ export default function Benefits() {
               <div className="text-5xl font-bold text-primary" data-testid={`stat-value-${index}`}>
                 {stat.value}
               </div>
-              <p className="mt-3 text-sm font-medium text-muted-foreground" data-testid={`stat-label-${index}`}>
+              <div className="mt-2 text-muted-foreground" data-testid={`stat-label-${index}`}>
                 {stat.label}
-              </p>
+              </div>
             </Card>
           ))}
         </div>
 
-        <div className="mt-16 grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-          {trustBadges.map((badge, index) => (
-            <div
-              key={index}
-              className="flex flex-col items-center gap-3 rounded-lg border p-6"
-              data-testid={`trust-badge-${index}`}
-            >
-              <badge.icon className="h-8 w-8 text-primary" data-testid={`trust-icon-${index}`} />
-              <span className="text-sm font-medium" data-testid={`trust-label-${index}`}>
-                {badge.label}
-              </span>
-            </div>
-          ))}
+        <div className="mt-16">
+          <h3 className="text-center text-xl font-semibold" data-testid="benefits-trust-title">
+            Built with security and compliance in mind
+          </h3>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
+            {trustBadges.map((badge, index) => (
+              <div key={index} className="flex items-center gap-2" data-testid={`trust-badge-${index}`}>
+                <badge.icon className="h-5 w-5 text-primary" />
+                <span className="text-sm font-medium">{badge.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <Card className="mx-auto mt-16 max-w-3xl border-l-4 border-l-primary p-8">
-          <blockquote className="text-lg italic leading-relaxed" data-testid="testimonial-quote">
-            "MediTrack Pro helped us identify and contain an MDR outbreak in under 4 hours. The contact tracing visualization made it immediately clear which patients and staff needed intervention."
+        <div className="mx-auto mt-16 max-w-2xl rounded-xl bg-muted p-8 text-center">
+          <blockquote className="text-lg italic text-muted-foreground" data-testid="benefits-testimonial">
+            "CodeVeda helped us streamline patient care and improve communication between doctors and families. The unified dashboard made it immediately clear which patients needed attention and how to provide it."
           </blockquote>
-          <div className="mt-4 flex items-center gap-4">
-            <div>
-              <p className="font-semibold" data-testid="testimonial-name">
-                Dr. Sarah Chen
-              </p>
-              <p className="text-sm text-muted-foreground" data-testid="testimonial-title">
-                Chief Infection Control Officer, Metro General Hospital
-              </p>
+          <div className="mt-6">
+            <div className="font-semibold" data-testid="benefits-testimonial-author">
+              Dr. Sarah Johnson
+            </div>
+            <div className="text-sm text-muted-foreground" data-testid="benefits-testimonial-title">
+              Chief Medical Officer, General Hospital
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </section>
   );
