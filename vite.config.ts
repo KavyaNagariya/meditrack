@@ -19,6 +19,9 @@ export default defineConfig({
         ]
       : []),
   ],
+  css: {
+    postcss: path.resolve(import.meta.dirname, "postcss.config.js"), // ✅ Explicit PostCSS config path
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
