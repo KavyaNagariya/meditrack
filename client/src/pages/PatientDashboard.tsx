@@ -3,22 +3,25 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getCurrentUser, getUserDetails, getUserRole } from "@/lib/auth";
-import { toast } from "@/hooks/use-toast";
 import { 
   Heart, 
+  Bell, 
+  Settings, 
+  Clock, 
   Calendar, 
   Shield, 
+  User, 
   Activity, 
-  FileText, 
-  AlertTriangle,
-  Clock,
-  User,
-  Settings,
-  Bell,
+  FileText,
+  Stethoscope,
+  Pill,
   Phone,
-  MapPin
+  MapPin,
+  TrendingUp
 } from "lucide-react";
+import { getCurrentUser, getUserDetails, getUserRole } from "@/lib/auth";
+import { toast } from "@/hooks/use-toast";
+import logo from "@/assets/logo.png";
 
 export default function PatientDashboard() {
   const [userDetails, setUserDetails] = useState<any>(null);
@@ -81,10 +84,10 @@ export default function PatientDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="bg-white p-2 rounded-lg">
-                <Heart className="h-8 w-8 text-blue-600" />
+                <img src={logo} className="h-8 w-8" alt="CodeVeda Logo" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">MediCare Pro</h1>
+                <h1 className="text-2xl font-bold">CodeVeda</h1>
                 <p className="text-blue-100">Advanced Healthcare Platform</p>
               </div>
             </div>
@@ -279,13 +282,13 @@ export default function PatientDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="bg-orange-100 p-3 rounded-full">
-                  <Calendar className="h-6 w-6 text-orange-600" />
+                  <Stethoscope className="h-6 w-6 text-orange-600" />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">Appointments</h4>
-                  <p className="text-sm text-gray-600">Schedule & manage visits</p>
+                  <p className="text-sm text-gray-600">Schedule & manage</p>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-lg font-bold text-orange-600">2 Upcoming</span>
+                    <span className="text-sm text-gray-500">Next: Tomorrow</span>
                     <Button variant="ghost" size="sm">→</Button>
                   </div>
                 </div>
@@ -297,13 +300,13 @@ export default function PatientDashboard() {
             <CardContent className="p-6">
               <div className="flex items-center space-x-4">
                 <div className="bg-red-100 p-3 rounded-full">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <Pill className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">Alerts</h4>
-                  <p className="text-sm text-gray-600">Health notifications</p>
+                  <h4 className="font-semibold text-gray-900">Medications</h4>
+                  <p className="text-sm text-gray-600">Prescriptions & reminders</p>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-lg font-bold text-green-600">No Alerts</span>
+                    <span className="text-sm text-gray-500">2 active</span>
                     <Button variant="ghost" size="sm">→</Button>
                   </div>
                 </div>
@@ -318,10 +321,10 @@ export default function PatientDashboard() {
                   <Phone className="h-6 w-6 text-teal-600" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">Emergency</h4>
-                  <p className="text-sm text-gray-600">Quick access to help</p>
+                  <h4 className="font-semibold text-gray-900">Contact Doctor</h4>
+                  <p className="text-sm text-gray-600">Secure messaging</p>
                   <div className="flex items-center justify-between mt-2">
-                    <span className="text-lg font-bold text-teal-600">24/7 Support</span>
+                    <span className="text-sm text-gray-500">Dr. Smith</span>
                     <Button variant="ghost" size="sm">→</Button>
                   </div>
                 </div>
@@ -330,24 +333,24 @@ export default function PatientDashboard() {
           </Card>
         </div>
 
-        {/* Personal Information Card */}
-        <div className="mt-8">
+        {/* Patient Information */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
           <Card className="bg-white shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center">
                 <User className="h-5 w-5 mr-2" />
-                Personal Information
+                Patient Information
               </CardTitle>
-              <CardDescription>Your registered details</CardDescription>
+              <CardDescription>Your personal details</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-gray-600">Full Name</p>
                   <p className="text-gray-900">{userDetails?.name || "Not provided"}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-600">Contact Number</p>
+                  <p className="text-sm font-medium text-gray-600">Contact</p>
                   <p className="text-gray-900">{userDetails?.contactNo || "Not provided"}</p>
                 </div>
                 <div className="space-y-1">
@@ -369,12 +372,46 @@ export default function PatientDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <TrendingUp className="h-5 w-5 mr-2" />
+                Health Analytics
+              </CardTitle>
+              <CardDescription>Your health trends and insights</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-600">Blood Pressure</span>
+                  <span className="text-gray-900">120/80 mmHg</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-600">Heart Rate</span>
+                  <span className="text-gray-900">72 bpm</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-600">Weight</span>
+                  <span className="text-gray-900">70 kg</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-600">Height</span>
+                  <span className="text-gray-900">175 cm</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-gray-600">BMI</span>
+                  <span className="text-gray-900">22.9 (Normal)</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Footer */}
         <div className="mt-12 pt-8 border-t border-gray-200">
           <div className="flex items-center justify-between text-sm text-gray-500">
-            <p>© 2025 MediCare Pro. All rights reserved.</p>
+            <p>© 2025 CodeVeda. All rights reserved.</p>
             <div className="flex space-x-6">
               <a href="#" className="hover:text-gray-700">Privacy Policy</a>
               <a href="#" className="hover:text-gray-700">HIPAA Compliance</a>

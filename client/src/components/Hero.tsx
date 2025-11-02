@@ -13,7 +13,7 @@ export default function Hero() {
             Stop outbreaks before they start.
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-muted-foreground md:text-xl" data-testid="hero-subheadline">
-            Real-time MDR contact tracing, automated risk alerts, and a unified infection-control dashboard for hospitals.
+            Advanced healthcare solutions with real-time monitoring, automated alerts, and a unified dashboard.
           </p>
           <div className="mt-6 flex flex-wrap items-center gap-4 md:hidden">
             <Button variant="outline" data-testid="button-hero-login" onClick={() => navigate("/login")}>
@@ -29,7 +29,7 @@ export default function Hero() {
           <div className="relative w-full">
             <img
               src={dashboardImage}
-              alt="MediTrack Pro dashboard showing real-time contact tracing network with exposure chains and risk alerts"
+              alt="CodeVeda dashboard showing real-time monitoring with alerts and analytics"
               className="w-full rounded-xl shadow-2xl"
               data-testid="hero-dashboard-image"
             />

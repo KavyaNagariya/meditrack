@@ -77,7 +77,7 @@ export default function Signup() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
           <CardDescription className="text-center">
-            Enter your information to create your MediTrack Pro account
+            Enter your information to create your CodeVeda account
           </CardDescription>
         </CardHeader>
         <CardContent>

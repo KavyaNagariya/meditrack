@@ -98,7 +98,7 @@ export default function RoleSelection() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">Select Your Role</CardTitle>
           <CardDescription className="text-center">
-            Please select your role to continue using MediTrack Pro
+            Please select your role to continue using CodeVeda
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

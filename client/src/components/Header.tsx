@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Activity } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useLocation } from "wouter";
+import logo from "@/assets/logo.png";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -19,9 +20,9 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container flex h-20 items-center justify-between px-6 md:px-8">
         <div className="flex items-center gap-2">
-          <Activity className="h-8 w-8 text-primary" data-testid="logo-icon" />
+          <img src={logo} className="h-8 w-8" alt="CodeVeda Logo" data-testid="logo-icon" />
           <span className="text-xl font-bold tracking-tight" data-testid="logo-text">
-            MediTrack Pro
+            CodeVeda
           </span>
         </div>
 

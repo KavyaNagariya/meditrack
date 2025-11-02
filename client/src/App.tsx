@@ -5,15 +5,15 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
-import Login from "@/pages/login";
-import Signup from "@/pages/signup";
-import RoleSelection from "./pages/RoleSelection";
-import PatientDetails from "./pages/PatientDetails";
-import DoctorDetails from "./pages/DoctorDetails";
-import FamilyDetails from "./pages/FamilyDetails";
-import PatientDashboard from "./pages/PatientDashboard";
-import DoctorDashboard from "./pages/DoctorDashboard";
-import FamilyDashboard from "./pages/FamilyDashboard";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import RoleSelection from "@/pages/RoleSelection";
+import PatientDetails from "@/pages/PatientDetails";
+import DoctorDetails from "@/pages/DoctorDetails";
+import FamilyDetails from "@/pages/FamilyDetails";
+import PatientDashboard from "@/pages/PatientDashboard";
+import DoctorDashboard from "@/pages/DoctorDashboard";
+import FamilyDashboard from "@/pages/FamilyDashboard";
 
 function Router() {
   return (
